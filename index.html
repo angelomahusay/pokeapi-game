@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Who's That Pokémon?</title>
+  <!-- Google Fonts: Poppins -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Poppins', 'sans-serif'] },
+          animation: {
+            'fade-in-up': 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'pop-in': 'popIn 0.5s cubic-bezier(0.26, 0.53, 0.74, 1.48) forwards',
+            'bounce-in': 'bounceIn 0.5s cubic-bezier(0.26, 0.53, 0.74, 1.48) forwards',
+            'spin-slow': 'spin 2s linear infinite',
+            'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            fadeInUp: { '0%': { opacity: '0', transform: 'translateY(40px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+            popIn: { '0%': { opacity: '0', transform: 'scale(0.8)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
+            bounceIn: { '0%': { opacity: '0', transform: 'scale(0.3)' }, '50%': { opacity: '1', transform: 'scale(1.05)' }, '70%': { transform: 'scale(0.9)' }, '100%': { transform: 'scale(1)' } }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #1e3a8a;
+      background-image: radial-gradient(circle at top right, rgba(255, 255, 255, 0.05) 0%, transparent 30%),
+        radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.05) 0%, transparent 30%);
+    }
+
+    .silhouette {
+      filter: brightness(0) contrast(100%);
+      transition: filter 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .revealed {
+      filter: brightness(1) drop-shadow(0 20px 30px rgba(0, 0, 0, 0.4));
+      transition: filter 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+
+<body
+  class="bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 font-sans select-none text-slate-800 relative z-0 overflow-y-auto">
+
+  <!-- Abstract Background Elements -->
+  <div class="fixed inset-0 overflow-hidden -z-10 pointer-events-none flex justify-between">
+    <div class="w-96 h-96 rounded-full bg-blue-500/20 blur-3xl -translate-y-1/2 -translate-x-1/4"></div>
+    <div
+      class="w-80 h-80 rounded-full bg-purple-600/20 blur-3xl bottom-0 absolute translate-y-1/4 translate-x-1/4 right-0">
+    </div>
+  </div>
+
+  <!-- Main Container to ensure vertical spacing works -->
+  <div class="w-full max-w-md flex flex-col items-center py-8">
+
+    <!-- Main Game Card -->
+    <div class="w-full opacity-0 animate-fade-in-up" style="animation-delay: 0.1s;">
+
+      <div
+        class="bg-white rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-4 border-white/20 relative transform transition-all duration-300 w-full">
+
+        <!-- Card Header -->
+        <div
+          class="bg-gradient-to-r from-red-500 via-red-500 to-red-600 px-6 py-6 text-center relative overflow-hidden">
+          <!-- Subtle Pokeball watermark -->
+          <div
+            class="absolute -right-8 -top-8 opacity-10 w-32 h-32 rounded-full border-8 border-white flex items-center justify-center pointer-events-none">
+            <div class="w-full h-2 bg-white absolute"></div>
+            <div class="w-10 h-10 bg-white rounded-full z-10"></div>
+          </div>
+
+          <h1
+            class="text-3xl font-black uppercase tracking-widest text-yellow-400 drop-shadow-[0_2px_2px_rgba(0,0,0,0.6)] -skew-x-6">
+            Who's That
+          </h1>
+          <h2
+            class="text-2xl font-black uppercase tracking-widest text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.6)] -skew-x-6 mt-1">
+            Pokémon?
+          </h2>
+
+          <!-- Scoreboard Badges -->
+          <div class="flex justify-center gap-4 mt-6">
+            <div
+              class="bg-white/20 backdrop-blur-md px-4 py-2 rounded-2xl flex flex-col shadow-inner border border-white/30 text-white w-28">
+              <span class="text-[10px] uppercase tracking-wider font-bold opacity-90 mb-1">Streak</span>
+              <span id="current-streak"
+                class="text-2xl font-black leading-none text-yellow-300 drop-shadow-md transition-all">0</span>
+            </div>
+            <div
+              class="bg-black/20 backdrop-blur-md px-4 py-2 rounded-2xl flex flex-col shadow-inner border border-black/30 text-white w-28">
+              <span class="text-[10px] uppercase tracking-wider font-bold opacity-90 mb-1">Best</span>
+              <span id="best-streak" class="text-2xl font-black leading-none drop-shadow-md transition-all">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game Content Area -->
+        <div class="p-6 sm:p-8 relative flex flex-col items-center shadow-inner z-10 bg-slate-50">
+
+          <!-- Image Container -->
+          <div
+            class="w-56 h-56 sm:w-64 sm:h-64 relative flex items-center justify-center mb-6 bg-gradient-to-b from-white to-blue-50 rounded-full shadow-inner border-[6px] border-white">
+
+            <!-- Loading Spinner (Custom CSS shape) -->
+            <div id="loading" class="absolute flex flex-col items-center justify-center z-10">
+              <div
+                class="w-16 h-16 rounded-full border-4 border-slate-700 bg-white relative overflow-hidden animate-spin-slow shadow-lg">
+                <div class="absolute top-0 left-0 w-full h-1/2 bg-red-500 border-b-4 border-slate-700"></div>
+                <div
+                  class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-white border-4 border-slate-700 rounded-full z-10">
+                </div>
+              </div>
+              <p class="font-bold text-slate-400 mt-4 text-xs uppercase tracking-widest animate-pulse-fast">Loading...
+              </p>
+            </div>
+
+            <!-- Pokemon Image -->
+            <img id="pokemon-image" src="" alt="Pokemon"
+              class="w-[85%] h-[85%] object-contain hidden silhouette z-20 transition-transform duration-500 hover:scale-110 drop-shadow-xl"
+              draggable="false">
+          </div>
+
+          <!-- Result Message -->
+          <div class="h-10 mb-5 w-full flex items-center justify-center flex-col">
+            <p id="result-message"
+              class="text-xl sm:text-2xl font-black text-center capitalize tracking-wide transition-all duration-300 opacity-0 scale-90">
+            </p>
+          </div>
+
+          <!-- Choices Container -->
+          <div id="choices-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full mb-2">
+            <!-- Buttons injected via JS -->
+          </div>
+
+          <!-- Play Again Button -->
+          <button id="play-again-btn"
+            class="hidden mt-6 w-full bg-gradient-to-b from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 text-slate-900 border-b-[6px] border-yellow-600 active:border-b-0 active:translate-y-[6px] font-black py-4 rounded-2xl uppercase transition-all shadow-lg text-lg tracking-wider">
+            Play Again
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer
+      class="mt-8 text-center text-blue-100 text-xs sm:text-sm font-medium tracking-wider opacity-0 animate-fade-in-up flex-shrink-0"
+      style="animation-delay: 0.3s;">
+      <div
+        class="glass-panel px-6 py-3 rounded-full inline-flex flex-col sm:flex-row sm:gap-6 items-center justify-center">
+        <p class="mb-1 sm:mb-0 text-white/90">Powered by: <a href="https://pokeapi.co/" target="_blank"
+            class="text-yellow-400 hover:text-white transition-colors underline decoration-yellow-400/50 underline-offset-4 font-bold">PokéAPI</a>
+        </p>
+        <p class="mb-1 sm:mb-0 text-white/70">Created by: <span class="text-white/90 font-bold">Angelo M. Mahusay</span>
+        </p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // State Management
+    const state = {
+      targetPokemon: null,
+      pokemonList: [],
+      currentStreak: 0,
+      bestStreak: 0,
+      isRevealed: false
+    };
+
+    // DOM Elements
+    const elCurrentStreak = document.getElementById('current-streak');
+    const elBestStreak = document.getElementById('best-streak');
+    const elImage = document.getElementById('pokemon-image');
+    const elLoading = document.getElementById('loading');
+    const elChoices = document.getElementById('choices-container');
+    const elResultMessage = document.getElementById('result-message');
+    const elPlayAgainBtn = document.getElementById('play-again-btn');
+
+    // Initialization
+    async function init() {
+      state.currentStreak = parseInt(localStorage.getItem('currentStreak')) || 0;
+      state.bestStreak = parseInt(localStorage.getItem('bestStreak')) || 0;
+      updateScoreboard();
+
+      try {
+        const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1000');
+        const data = await res.json();
+        state.pokemonList = data.results.map(p => p.name);
+      } catch (err) {
+        console.error("Failed to load pokemon list", err);
+      }
+
+      elPlayAgainBtn.addEventListener('click', loadGame);
+      loadGame();
+    }
+
+    // Main Gameloop setup
+    async function loadGame() {
+      state.isRevealed = false;
+
+      // Reset UI state
+      elImage.classList.add('hidden');
+      elImage.classList.remove('revealed', 'animate-bounce-in');
+      elImage.classList.add('silhouette');
+
+      elLoading.classList.remove('hidden');
+      elChoices.innerHTML = '';
+
+      elResultMessage.textContent = '';
+      elResultMessage.classList.remove('opacity-100', 'scale-100', 'text-green-500', 'text-red-500');
+      elResultMessage.classList.add('opacity-0', 'scale-90');
+
+      elPlayAgainBtn.classList.add('hidden');
+      elPlayAgainBtn.classList.remove('animate-pop-in');
+
+      try {
+        const randomId = Math.floor(Math.random() * 1010) + 1;
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
+        const data = await res.json();
+
+        state.targetPokemon = {
+          name: data.name,
+          image: data.sprites.other['official-artwork'].front_default || data.sprites.front_default
+        };
+
+        const options = new Set([state.targetPokemon.name]);
+        while (options.size < 4) {
+          const randomDecoyIndex = Math.floor(Math.random() * state.pokemonList.length);
+          if (state.pokemonList[randomDecoyIndex]) {
+            options.add(state.pokemonList[randomDecoyIndex]);
+          }
+        }
+
+        const shuffledOptions = Array.from(options).sort(() => Math.random() - 0.5);
+
+        // Preload image
+        elImage.src = state.targetPokemon.image;
+
+        elImage.onload = () => {
+          elLoading.classList.add('hidden');
+          elImage.classList.remove('hidden');
+          elImage.classList.add('animate-pop-in');
+
+          // Render Buttons with staggered animation
+          shuffledOptions.forEach((name, index) => {
+            const btn = document.createElement('button');
+            const keyNumber = index + 1;
+
+            // Add the key number badge and the name
+            btn.innerHTML = `
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 bg-slate-100 text-slate-400 rounded-md text-xs font-black border border-slate-200">${keyNumber}</span>
+              ${name.replace(/-/g, ' ')}
+            `;
+
+            // Re-vamped button classes! Added relative and pl-10 to accommodate the key badge
+            btn.className = `choice-btn relative pl-10 bg-white border-2 border-slate-200 text-slate-700 font-bold py-3.5 px-4 rounded-xl capitalize transition-all duration-200 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 hover:shadow-md hover:-translate-y-1 active:translate-y-0 active:shadow-none shadow-sm text-sm sm:text-base opacity-0 animate-fade-in-up`;
+            btn.style.animationDelay = `${(index + 1) * 0.1}s`;
+
+            btn.onclick = () => handleGuess(name, btn);
+            btn.dataset.pokemonName = name; // Store name for keyboard matching
+            elChoices.appendChild(btn);
+          });
+        };
+
+      } catch (error) {
+        console.error("Error:", error);
+        showResult("Network Error. Please try again.", false);
+        elPlayAgainBtn.classList.remove('hidden');
+      }
+    }
+
+    // Handle User Selection
+    function handleGuess(selectedName, buttonEl) {
+      if (state.isRevealed) return;
+      state.isRevealed = true;
+
+      const isCorrect = selectedName.toLowerCase() === state.targetPokemon.name.toLowerCase();
+      const cleanTargetName = state.targetPokemon.name.replace(/-/g, ' ');
+
+      // Reveal Image - bouncy effect
+      elImage.classList.remove('silhouette', 'animate-pop-in');
+      void elImage.offsetWidth; // Trigger reflow
+      elImage.classList.add('revealed', 'animate-bounce-in');
+
+      const allButtons = document.querySelectorAll('.choice-btn');
+
+      if (isCorrect) {
+        // Correct style (green push)
+        buttonEl.className = 'choice-btn bg-green-500 border-none text-white font-bold py-3.5 px-4 rounded-xl capitalize shadow-[0_6px_0_rgb(21,128,61)] -translate-y-1 transform scale-105 transition-all duration-300 z-10';
+        showResult("It's " + cleanTargetName + "!", true);
+
+        state.currentStreak++;
+        if (state.currentStreak > state.bestStreak) {
+          state.bestStreak = state.currentStreak;
+          elBestStreak.parentNode.classList.add('animate-pop-in');
+          setTimeout(() => elBestStreak.parentNode.classList.remove('animate-pop-in'), 500);
+        }
+      } else {
+        // Incorrect style (red press)
+        buttonEl.className = 'choice-btn bg-red-500 border-none text-white font-bold py-3.5 px-4 rounded-xl capitalize shadow-[0_6px_0_rgb(185,28,28)] -translate-y-1 transition-all duration-300 opacity-90';
+        showResult("It's " + cleanTargetName + "!", false);
+
+        state.currentStreak = 0;
+
+        // Highlight correct answer
+        allButtons.forEach(btn => {
+          if (btn.textContent.toLowerCase() === cleanTargetName.toLowerCase()) {
+            btn.className = 'choice-btn bg-green-400 border-2 border-green-500 text-green-900 font-bold py-3.5 px-4 rounded-xl capitalize animate-pulse-fast transition-all duration-300 shadow-lg scale-105 z-10';
+          }
+        });
+      }
+
+      // Disable other buttons
+      allButtons.forEach(btn => {
+        if (btn !== buttonEl && btn.textContent.toLowerCase() !== cleanTargetName.toLowerCase()) {
+          btn.classList.add('opacity-50', 'scale-95');
+          btn.classList.remove('hover:-translate-y-1', 'hover:shadow-md');
+        }
+        btn.style.cursor = 'default';
+        btn.onclick = null;
+      });
+
+      // Save & Update Scoreboard
+      localStorage.setItem('currentStreak', state.currentStreak);
+      localStorage.setItem('bestStreak', state.bestStreak);
+      updateScoreboard();
+
+      // Show Play Again trigger with a pop in
+      setTimeout(() => {
+        elPlayAgainBtn.classList.remove('hidden');
+        elPlayAgainBtn.classList.add('animate-pop-in');
+      }, 300);
+    }
+
+    function showResult(text, isSuccess) {
+      elResultMessage.textContent = text;
+      elResultMessage.className = `text-2xl sm:text-3xl font-black text-center capitalize tracking-wider transition-all duration-500 transform scale-100 opacity-100 drop-shadow-sm ${isSuccess ? 'text-green-500' : 'text-red-500'}`;
+    }
+
+    function updateScoreboard() {
+      elCurrentStreak.classList.remove('animate-pop-in');
+      void elCurrentStreak.offsetWidth;
+      elCurrentStreak.classList.add('animate-pop-in');
+
+      elCurrentStreak.textContent = state.currentStreak;
+      elBestStreak.textContent = state.bestStreak;
+    }
+
+    // Handle Keyboard Events
+    function handleKeyDown(e) {
+      // Don't do anything if we are currently revealed and waiting for 'Play Again'
+      // Or if the Play Again button is focused and they hit enter
+      if (document.activeElement === elPlayAgainBtn && e.key === 'Enter') return;
+
+      if (state.isRevealed) {
+        // If game is over, let 'Enter' or 'Space' or '1-4' start a new game easily
+        if (e.key === 'Enter' || e.key === ' ' || ['1', '2', '3', '4'].includes(e.key)) {
+          if (!elPlayAgainBtn.classList.contains('hidden')) {
+            elPlayAgainBtn.click();
+          }
+        }
+        return;
+      }
+
+      // Check if the pressed key is 1, 2, 3, or 4
+      if (['1', '2', '3', '4'].includes(e.key)) {
+        const choiceIndex = parseInt(e.key) - 1;
+        const allButtons = document.querySelectorAll('.choice-btn');
+        const targetButton = allButtons[choiceIndex];
+
+        if (targetButton) {
+          const pokemonName = targetButton.dataset.pokemonName;
+          handleGuess(pokemonName, targetButton);
+        }
+      }
+    }
+
+    // Start the application
+    init();
+
+    // Global Keydown Listener
+    window.addEventListener('keydown', handleKeyDown);
+
+  </script>
+</body>
+
+</html>
